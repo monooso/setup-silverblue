@@ -1,6 +1,6 @@
-# Distroboxes
+# Setup Silverblue
 
-A collection of Distrobox containers for development on Fedora Silverblue (or other atomic desktops).
+Automated setup script and Distrobox containers for development on Fedora Silverblue (or other atomic desktops).
 
 ## Philosophy
 
@@ -66,26 +66,49 @@ Dependencies: `autoconf`, `automake`, `g++`, `ncurses-devel`, `openssl-devel`
 
 ## Prerequisites
 
-### Host System
+### Before Running Setup
 
-- Fedora Silverblue (or another atomic desktop)
-- A terminal emulator (I use [Ghostty](https://ghostty.org))
+Copy your SSH keys to the host machine:
+```sh
+~/.ssh/keys.d/default
+~/.ssh/keys.d/default.pub
+```
 
-### Host Packages
-
-Install these on the host system (layered via `rpm-ostree`):
-
-- Distrobox: use the [official install script](https://distrobox.it/#installation)
-- ZSH: `rpm-ostree install zsh`
-- Optional: Ghostty (available as [Flatpak](https://flathub.org/apps/details/com.mitchellh.ghostty) or [AppImage](https://ghostty.org/docs/install/binary#universal-appimage))
+The setup script requires SSH keys for cloning your dotfiles repository.
 
 ## Setup
 
-1. Clone this repository
-2. Run `distrobox-assemble create` to build all containers
-3. Clone your dotfiles repository
-4. Install user-space tools (Mise, Starship, etc.) via their official scripts to `~/.local/bin`
-5. Configure your terminal emulator to automatically enter the `dev` container on new sessions
+The setup process is automated via `setup.sh` and runs in two phases:
+
+### Phase 1: Pre-reboot
+
+1. Clone this repository to a convenient location (e.g., `~/code/setup`)
+2. Run the setup script: `./setup.sh`
+
+The script will:
+- Layer ZSH and GNU Stow via `rpm-ostree`
+- Change your default shell to ZSH
+- Prompt you to reboot
+
+**Reboot when prompted.** The layered packages (ZSH, Stow) and shell change require a reboot to take effect.
+
+### Phase 2: Post-reboot
+
+After rebooting, re-run the setup script: `./setup.sh`
+
+The script will automatically detect it's in post-reboot phase and:
+- Clone your dotfiles repository
+- Install dotfiles using GNU Stow
+- Install user-space tools (Mise, Starship) to `~/.local/bin`
+- Install Distrobox to `~/.local/bin`
+- Create all containers from `distrobox.ini`
+- Install Flatpak applications (Discord, Fastmail, Obsidian, etc.)
+
+Your development environment is now ready.
+
+### Terminal Configuration
+
+Configure your terminal emulator to automatically enter the `dev` container on new sessions.
 
 **Ghostty configuration**:
 ```ini
@@ -149,6 +172,6 @@ If you find other languages causing similar issues, you can create additional `b
 
 ## Future Improvements
 
-- Automate build workflows with scripts in this repository
-- Consolidate setup steps into a single script
+- Automate Neovim build workflow with script in this repository
 - Consider automating updates for user-space tools
+- Add verification that each step completed successfully

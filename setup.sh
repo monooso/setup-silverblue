@@ -33,6 +33,10 @@ check_ssh_keys() {
     [ -f "$HOME/.ssh/keys.d/default" ] && [ -f "$HOME/.ssh/keys.d/default.pub" ]
 }
 
+check_stow_available() {
+    check_command stow
+}
+
 # -----------------------------------------------------------------------------
 # Pre-flight checks
 # -----------------------------------------------------------------------------
@@ -51,21 +55,36 @@ mkdir -p "$HOME/.local/bin"
 info "Pre-flight checks passed"
 
 # -----------------------------------------------------------------------------
+# Detect if we're in post-reboot phase
+# -----------------------------------------------------------------------------
+
+POST_REBOOT=false
+if check_stow_available; then
+    POST_REBOOT=true
+    info "Post-reboot phase detected (Stow is available)"
+    info "Skipping rpm-ostree and shell change steps"
+fi
+
+# -----------------------------------------------------------------------------
 # Step 1: Layer system packages
 # -----------------------------------------------------------------------------
 
-step_description="Layer ZSH and GNU Stow via rpm-ostree (requires reboot to take effect)"
-if step_confirm "$step_description"; then
-    if ! rpm-ostree status | grep -qE '^(zsh|stow)'; then
-        info "Installing ZSH and Stow..."
-        rpm-ostree install zsh stow
-        info "ZSH and Stow installed successfully"
-        info "NOTE: These packages will not be available until you reboot"
+if [ "$POST_REBOOT" = false ]; then
+    step_description="Layer ZSH and GNU Stow via rpm-ostree (requires reboot to take effect)"
+    if step_confirm "$step_description"; then
+        if ! rpm-ostree status | grep -qE '^(zsh|stow)'; then
+            info "Installing ZSH and Stow..."
+            rpm-ostree install zsh stow
+            info "ZSH and Stow installed successfully"
+            info "NOTE: These packages will not be available until you reboot"
+        else
+            info "ZSH and Stow already layered, skipping"
+        fi
     else
-        info "ZSH and Stow already layered, skipping"
+        error "Setup cancelled by user"
     fi
 else
-    error "Setup cancelled by user"
+    info "Skipping Step 1 (post-reboot phase)"
 fi
 
 # -----------------------------------------------------------------------------
@@ -248,58 +267,76 @@ fi
 # Step 9: Change default shell to ZSH
 # -----------------------------------------------------------------------------
 
-step_description="Change default shell to ZSH (requires reboot to take effect)"
-if step_confirm "$step_description"; then
-    if [ "$SHELL" != "/bin/zsh" ]; then
-        info "Changing default shell to ZSH..."
-        chsh -s /bin/zsh
-
+if [ "$POST_REBOOT" = false ]; then
+    step_description="Change default shell to ZSH (requires reboot to take effect)"
+    if step_confirm "$step_description"; then
         if [ "$SHELL" != "/bin/zsh" ]; then
-            info "Shell change scheduled (will take effect after reboot)"
+            info "Changing default shell to ZSH..."
+            chsh -s /bin/zsh
+
+            if [ "$SHELL" != "/bin/zsh" ]; then
+                info "Shell change scheduled (will take effect after reboot)"
+            fi
+            info "Shell changed to ZSH successfully"
+        else
+            info "Shell is already ZSH, skipping"
         fi
-        info "Shell changed to ZSH successfully"
     else
-        info "Shell is already ZSH, skipping"
+        error "Setup cancelled by user"
     fi
 else
-    error "Setup cancelled by user"
+    info "Skipping Step 9 (post-reboot phase)"
 fi
 
 # -----------------------------------------------------------------------------
 # Step 10: Completion message
 # -----------------------------------------------------------------------------
 
-cat <<EOF
+if [ "$POST_REBOOT" = false ]; then
+    cat <<EOF
+
+========================================
+Pre-reboot phase completed!
+========================================
+
+The following items were configured:
+- ZSH and GNU Stow (layered via rpm-ostree)
+- Default shell changed to ZSH
+
+IMPORTANT: You MUST reboot for following changes to take effect:
+- rpm-ostree layered packages (ZSH, Stow)
+- Default shell change
+
+After reboot, run this script again to continue setup.
+
+Would you like to reboot now? [y/N]
+EOF
+
+    read -r reboot_response
+    case "$reboot_response" in
+        [yY][eE][sS]|[yY])
+            info "Rebooting system..."
+            sudo reboot
+            ;;
+        *)
+            info "Pre-reboot phase complete. Please reboot when ready, then re-run this script."
+            ;;
+    esac
+else
+    cat <<EOF
 
 ========================================
 Setup completed successfully!
 ========================================
 
 The following items were installed:
-- ZSH and GNU Stow (layered via rpm-ostree)
 - Dotfiles (cloned and symlinked)
 - Mise (version manager)
 - Starship prompt
 - Distrobox and containers (dev, build-neovim, build-mise-erlang)
 - Flatpak applications
-- Default shell changed to ZSH
 
-IMPORTANT: You MUST reboot for the following changes to take effect:
-- rpm-ostree layered packages (ZSH, Stow)
-- Default shell change
+Your development environment is ready to use!
 
-After reboot, you can start using your new environment immediately.
-
-Would you like to reboot now? [y/N]
 EOF
-
-read -r reboot_response
-case "$reboot_response" in
-    [yY][eE][sS]|[yY])
-        info "Rebooting system..."
-        sudo reboot
-        ;;
-    *)
-        info "Setup complete. Please reboot when ready."
-        ;;
-esac
+fi
