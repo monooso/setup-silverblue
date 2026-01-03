@@ -1,0 +1,305 @@
+#!/usr/bin/env sh
+
+set -euo pipefail
+
+# -----------------------------------------------------------------------------
+# Helper functions
+# -----------------------------------------------------------------------------
+
+step_confirm() {
+    printf "\n[STEP] %s\n" "$1"
+    printf "Proceed? [y/N] "
+    read -r response
+    case "$response" in
+        [yY][eE][sS]|[yY]) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+info() {
+    printf "[INFO] %s\n" "$1"
+}
+
+error() {
+    printf "[ERROR] %s\n" "$1" >&2
+    exit 1
+}
+
+check_command() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+check_ssh_keys() {
+    [ -f "$HOME/.ssh/keys.d/default" ] && [ -f "$HOME/.ssh/keys.d/default.pub" ]
+}
+
+# -----------------------------------------------------------------------------
+# Pre-flight checks
+# -----------------------------------------------------------------------------
+
+info "Running pre-flight checks..."
+
+if [ "$(id -u)" = "0" ]; then
+    error "This script must not be run as root"
+fi
+
+if ! check_ssh_keys; then
+    error "SSH keys not found. Please copy them to ~/.ssh/keys.d/default[.pub] before running this script"
+fi
+
+mkdir -p "$HOME/.local/bin"
+info "Pre-flight checks passed"
+
+# -----------------------------------------------------------------------------
+# Step 1: Layer system packages
+# -----------------------------------------------------------------------------
+
+step_description="Layer ZSH and GNU Stow via rpm-ostree (requires reboot to take effect)"
+if step_confirm "$step_description"; then
+    if ! rpm-ostree status | grep -qE '^(zsh|stow)'; then
+        info "Installing ZSH and Stow..."
+        rpm-ostree install zsh stow
+        info "ZSH and Stow installed successfully"
+        info "NOTE: These packages will not be available until you reboot"
+    else
+        info "ZSH and Stow already layered, skipping"
+    fi
+else
+    error "Setup cancelled by user"
+fi
+
+# -----------------------------------------------------------------------------
+# Step 2: Clone dotfiles
+# -----------------------------------------------------------------------------
+
+step_description="Clone dotfiles repository"
+if step_confirm "$step_description"; then
+    if [ ! -d "$HOME/code/dotfiles" ]; then
+        info "Creating ~/code directory..."
+        mkdir -p "$HOME/code"
+
+        info "Cloning dotfiles..."
+        git -c user.name="Bootstrap" -c user.email="bootstrap@example.com" \
+            clone https://github.com/monooso/dotfiles.git "$HOME/code/dotfiles"
+
+        if [ ! -d "$HOME/code/dotfiles" ]; then
+            error "Failed to clone dotfiles repository"
+        fi
+        info "Dotfiles cloned successfully"
+    else
+        info "Dotfiles already exist, skipping"
+    fi
+else
+    error "Setup cancelled by user"
+fi
+
+# -----------------------------------------------------------------------------
+# Step 3: Install dotfiles with Stow
+# -----------------------------------------------------------------------------
+
+step_description="Install dotfiles using GNU Stow"
+if step_confirm "$step_description"; then
+    if [ ! -L "$HOME/.zshrc" ]; then
+        info "Installing dotfiles..."
+        cd "$HOME/code/dotfiles" || error "Failed to change to dotfiles directory"
+        stow -t "$HOME" .
+
+        if [ ! -L "$HOME/.zshrc" ]; then
+            error "Failed to install dotfiles (symlinks not created)"
+        fi
+        info "Dotfiles installed successfully"
+    else
+        info "Dotfiles already installed, skipping"
+    fi
+else
+    error "Setup cancelled by user"
+fi
+
+# -----------------------------------------------------------------------------
+# Step 4: Install Mise
+# -----------------------------------------------------------------------------
+
+step_description="Install Mise (version manager)"
+if step_confirm "$step_description"; then
+    if [ ! -f "$HOME/.local/bin/mise" ]; then
+        info "Installing Mise..."
+        curl https://mise.run | sh
+
+        if [ ! -f "$HOME/.local/bin/mise" ]; then
+            error "Failed to install Mise"
+        fi
+        info "Mise installed successfully"
+    else
+        info "Mise already installed, skipping"
+    fi
+else
+    error "Setup cancelled by user"
+fi
+
+# -----------------------------------------------------------------------------
+# Step 5: Install Starship
+# -----------------------------------------------------------------------------
+
+step_description="Install Starship prompt"
+if step_confirm "$step_description"; then
+    if [ ! -f "$HOME/.local/bin/starship" ]; then
+        info "Installing Starship..."
+        curl -sS https://starship.rs/install.sh | sh -s -- -b "$HOME/.local/bin"
+
+        if [ ! -f "$HOME/.local/bin/starship" ]; then
+            error "Failed to install Starship"
+        fi
+        info "Starship installed successfully"
+    else
+        info "Starship already installed, skipping"
+    fi
+else
+    error "Setup cancelled by user"
+fi
+
+# -----------------------------------------------------------------------------
+# Step 6: Install Distrobox
+# -----------------------------------------------------------------------------
+
+step_description="Install Distrobox"
+if step_confirm "$step_description"; then
+    if ! check_command distrobox; then
+        info "Installing Distrobox..."
+        curl -s https://raw.githubusercontent.com/89luca89/distrobox/main/install | sh -s -- --prefix "$HOME/.local"
+
+        if ! check_command distrobox; then
+            error "Failed to install Distrobox"
+        fi
+
+        info "Distrobox version: $(distrobox --version)"
+        info "Distrobox installed successfully"
+    else
+        info "Distrobox already installed, skipping"
+    fi
+else
+    error "Setup cancelled by user"
+fi
+
+# -----------------------------------------------------------------------------
+# Step 7: Create Distrobox containers
+# -----------------------------------------------------------------------------
+
+step_description="Create Distrobox containers (dev, build-neovim, build-mise-erlang)"
+if step_confirm "$step_description"; then
+    script_dir="$(cd "$(dirname "$0")" && pwd)"
+    ini_file="$script_dir/distrobox.ini"
+
+    if [ ! -f "$ini_file" ]; then
+        error "distrobox.ini not found in script directory: $script_dir"
+    fi
+
+    existing_containers=$(distrobox list 2>/dev/null | grep -cE 'dev|build-neovim|build-mise-erlang' || echo "0")
+
+    if [ "$existing_containers" -lt 3 ]; then
+        info "Creating Distrobox containers from $ini_file..."
+        cd "$script_dir" || error "Failed to change to script directory"
+        distrobox-assemble create
+
+        if distrobox list | grep -qE 'dev|build-neovim|build-mise-erlang'; then
+            info "Containers created successfully"
+        else
+            error "Failed to create containers"
+        fi
+    else
+        info "All containers already exist, skipping"
+    fi
+else
+    error "Setup cancelled by user"
+fi
+
+# -----------------------------------------------------------------------------
+# Step 8: Install Flatpak applications
+# -----------------------------------------------------------------------------
+
+step_description="Install Flatpak applications"
+if step_confirm "$step_description"; then
+    apps="com.discordapp.Discord
+com.fastmail.Fastmail
+com.github.marhkb.Pods
+com.mattjakeman.ExtensionManager
+com.spotify.Client
+com.todoist.Todoist
+com.usebruno.Bruno
+dev.mufeed.Wordbook
+it.mijorus.gearlever
+md.obsidian.Obsidian
+org.gnome.Solanum"
+
+    if ! flatpak remote-list | grep -q flathub; then
+        info "Adding Flathub remote..."
+        flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+    fi
+
+    info "Installing Flatpak applications..."
+    flatpak install $apps --noninteractive
+
+    installed_count=$(echo "$apps" | wc -w)
+    info "$installed_count Flatpak applications installed successfully"
+else
+    error "Setup cancelled by user"
+fi
+
+# -----------------------------------------------------------------------------
+# Step 9: Change default shell to ZSH
+# -----------------------------------------------------------------------------
+
+step_description="Change default shell to ZSH (requires reboot to take effect)"
+if step_confirm "$step_description"; then
+    if [ "$SHELL" != "/bin/zsh" ]; then
+        info "Changing default shell to ZSH..."
+        chsh -s /bin/zsh
+
+        if [ "$SHELL" != "/bin/zsh" ]; then
+            info "Shell change scheduled (will take effect after reboot)"
+        fi
+        info "Shell changed to ZSH successfully"
+    else
+        info "Shell is already ZSH, skipping"
+    fi
+else
+    error "Setup cancelled by user"
+fi
+
+# -----------------------------------------------------------------------------
+# Step 10: Completion message
+# -----------------------------------------------------------------------------
+
+cat <<EOF
+
+========================================
+Setup completed successfully!
+========================================
+
+The following items were installed:
+- ZSH and GNU Stow (layered via rpm-ostree)
+- Dotfiles (cloned and symlinked)
+- Mise (version manager)
+- Starship prompt
+- Distrobox and containers (dev, build-neovim, build-mise-erlang)
+- Flatpak applications
+- Default shell changed to ZSH
+
+IMPORTANT: You MUST reboot for the following changes to take effect:
+- rpm-ostree layered packages (ZSH, Stow)
+- Default shell change
+
+After reboot, you can start using your new environment immediately.
+
+Would you like to reboot now? [y/N]
+EOF
+
+read -r reboot_response
+case "$reboot_response" in
+    [yY][eE][sS]|[yY])
+        info "Rebooting system..."
+        sudo reboot
+        ;;
+    *)
+        info "Setup complete. Please reboot when ready."
+        ;;
+esac
