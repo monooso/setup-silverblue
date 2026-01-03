@@ -34,6 +34,7 @@ Contains essential CLI tools:
 - `fd-find` - improved `find`
 - `fzf` - fuzzy finder
 - `gcc` - required for Treesitter in Neovim
+- `git` - version control
 - `ripgrep` - fast grep
 - `stow` - symlink farm manager
 - `tmux` - terminal multiplexer
