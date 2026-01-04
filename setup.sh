@@ -223,6 +223,11 @@ if step_confirm "$step_description"; then
             grep -o '"browser_download_url":"[^"]*linux_amd64.tar.gz"' | \
             head -1 | \
             sed 's/"browser_download_url":"\([^"]*\)"/\1/')
+
+        if [ -z "$latest_url" ]; then
+            error "Failed to extract LazyGit download URL from GitHub API"
+        fi
+
         curl -sL "$latest_url" -o "$tmp_dir/lazygit.tar.gz"
         tar -xzf "$tmp_dir/lazygit.tar.gz" -C "$tmp_dir" --strip-components=1 lazygit
         mv "$tmp_dir/lazygit" "$HOME/.local/bin/"
