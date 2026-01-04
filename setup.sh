@@ -72,9 +72,14 @@ fi
 if [ "$POST_REBOOT" = false ]; then
     step_description="Layer ZSH, GNU Stow, and 1Password via rpm-ostree (requires reboot to take effect)"
     if step_confirm "$step_description"; then
-        zsh_installed=$(rpm -q zsh 2>/dev/null && echo "yes" || echo "no")
-        stow_installed=$(rpm -q stow 2>/dev/null && echo "yes" || echo "no")
-        onepassword_installed=$(rpm -q 1password 2>/dev/null && echo "yes" || echo "no")
+        zsh_installed="no"
+        if rpm -q zsh &>/dev/null; then zsh_installed="yes"; fi
+
+        stow_installed="no"
+        if rpm -q stow &>/dev/null; then stow_installed="yes"; fi
+
+        onepassword_installed="no"
+        if rpm -q 1password &>/dev/null; then onepassword_installed="yes"; fi
 
         if [ "$zsh_installed" = "no" ] || [ "$stow_installed" = "no" ] || [ "$onepassword_installed" = "no" ]; then
             info "Installing ZSH, Stow, and 1Password..."
