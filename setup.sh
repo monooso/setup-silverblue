@@ -207,7 +207,36 @@ else
 fi
 
 # -----------------------------------------------------------------------------
-# Step 7: Install Distrobox
+# Step 7: Install LazyGit
+# -----------------------------------------------------------------------------
+
+step_description="Install LazyGit"
+if step_confirm "$step_description"; then
+    if [ ! -f "$HOME/.local/bin/lazygit" ]; then
+        info "Installing LazyGit..."
+        tmp_dir=$(mktemp -d)
+        latest_url=$(curl -s https://api.github.com/repos/jesseduffield/lazygit/releases/latest | \
+            grep "browser_download_url.*linux_amd64.tar.gz" | \
+            cut -d '"' -f 4)
+        curl -sL "$latest_url" -o "$tmp_dir/lazygit.tar.gz"
+        tar -xzf "$tmp_dir/lazygit.tar.gz" -C "$tmp_dir" --strip-components=1 lazygit
+        mv "$tmp_dir/lazygit" "$HOME/.local/bin/"
+        chmod +x "$HOME/.local/bin/lazygit"
+        rm -rf "$tmp_dir"
+
+        if [ ! -f "$HOME/.local/bin/lazygit" ]; then
+            error "Failed to install LazyGit"
+        fi
+        info "LazyGit installed successfully"
+    else
+        info "LazyGit already installed, skipping"
+    fi
+else
+    error "Setup cancelled by user"
+fi
+
+# -----------------------------------------------------------------------------
+# Step 8: Install Distrobox
 # -----------------------------------------------------------------------------
 
 step_description="Install Distrobox"
@@ -230,7 +259,7 @@ else
 fi
 
 # -----------------------------------------------------------------------------
-# Step 8: Create Distrobox containers
+# Step 9: Create Distrobox containers
 # -----------------------------------------------------------------------------
 
 step_description="Create Distrobox containers (dev, build-neovim, build-mise-erlang)"
@@ -262,7 +291,7 @@ else
 fi
 
 # -----------------------------------------------------------------------------
-# Step 9: Install Flatpak applications
+# Step 10: Install Flatpak applications
 # -----------------------------------------------------------------------------
 
 step_description="Install Flatpak applications"
@@ -306,7 +335,7 @@ else
 fi
 
 # -----------------------------------------------------------------------------
-# Step 10: Change default shell to ZSH
+# Step 11: Change default shell to ZSH
 # -----------------------------------------------------------------------------
 
 if [ "$POST_REBOOT" = false ]; then
@@ -331,7 +360,7 @@ else
 fi
 
 # -----------------------------------------------------------------------------
-# Step 11: Completion message
+# Step 12: Completion message
 # -----------------------------------------------------------------------------
 
 if [ "$POST_REBOOT" = false ]; then
@@ -376,6 +405,7 @@ The following items were installed:
 - Mise (version manager)
 - Starship prompt
 - rclone
+- LazyGit
 - Distrobox and containers (dev, build-neovim, build-mise-erlang)
 - Flatpak applications
 
