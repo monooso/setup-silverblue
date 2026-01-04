@@ -240,9 +240,10 @@ if step_confirm "$step_description"; then
         info "Installing LazyGit..."
         tmp_dir=$(mktemp -d)
         latest_url=$(curl -s https://api.github.com/repos/jesseduffield/lazygit/releases/latest | \
-            grep -o '"browser_download_url":"[^"]*linux_amd64.tar.gz"' | \
+            grep -o '"browser_download_url":"[^"]*linux_x86_64.tar.gz"' | \
             head -1 | \
             sed 's/"browser_download_url":"\([^"]*\)"/\1/')
+        set -o pipefail
 
         if [ -z "$latest_url" ]; then
             error "Failed to extract LazyGit download URL from GitHub API"
@@ -279,7 +280,7 @@ if step_confirm "$step_description"; then
             error "Failed to install Distrobox"
         fi
 
-        info "Distrobox version: $(distrobox --version)"
+        info "Distrobox version: $("$HOME/.local/bin/distrobox" --version)"
         info "Distrobox installed successfully"
     else
         info "Distrobox already installed, skipping"
