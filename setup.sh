@@ -356,11 +356,7 @@ if [ "$POST_REBOOT" = false ]; then
         if [ "$SHELL" != "/bin/zsh" ]; then
             info "Changing default shell to ZSH..."
             chsh -s /bin/zsh
-
-            if [ "$SHELL" != "/bin/zsh" ]; then
-                info "Shell change scheduled (will take effect after reboot)"
-            fi
-            info "Shell changed to ZSH successfully"
+            info "Shell changed to ZSH successfully (will take effect after reboot)"
         else
             info "Shell is already ZSH, skipping"
         fi
