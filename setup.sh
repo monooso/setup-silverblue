@@ -250,8 +250,8 @@ if step_confirm "$step_description"; then
         fi
 
         curl -sL "$latest_url" -o "$tmp_dir/lazygit.tar.gz"
-        tar -xzf "$tmp_dir/lazygit.tar.gz" -C "$tmp_dir" --strip-components=1 lazygit
-        mv "$tmp_dir/lazygit" "$HOME/.local/bin/"
+        tar -xzf "$tmp_dir/lazygit.tar.gz" -C "$tmp_dir" --strip-components=1
+        mv "$tmp_dir"/lazygit "$HOME/.local/bin/"
         chmod +x "$HOME/.local/bin/lazygit"
         rm -rf "$tmp_dir"
 
