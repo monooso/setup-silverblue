@@ -220,8 +220,9 @@ if step_confirm "$step_description"; then
         info "Installing LazyGit..."
         tmp_dir=$(mktemp -d)
         latest_url=$(curl -s https://api.github.com/repos/jesseduffield/lazygit/releases/latest | \
-            grep "browser_download_url.*linux_amd64.tar.gz" | \
-            cut -d '"' -f 4)
+            grep -o '"browser_download_url":"[^"]*linux_amd64.tar.gz"' | \
+            head -1 | \
+            sed 's/"browser_download_url":"\([^"]*\)"/\1/')
         curl -sL "$latest_url" -o "$tmp_dir/lazygit.tar.gz"
         tar -xzf "$tmp_dir/lazygit.tar.gz" -C "$tmp_dir" --strip-components=1 lazygit
         mv "$tmp_dir/lazygit" "$HOME/.local/bin/"
