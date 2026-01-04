@@ -330,9 +330,16 @@ if step_confirm "$step_description"; then
 
     info "Installing Flatpak applications..."
 
+    failed_apps=()
     for app in "${apps[@]}"; do
-        flatpak install "$app" --noninteractive
+        if ! flatpak install "$app" --noninteractive --or-update; then
+            failed_apps+=("$app")
+        fi
     done
+
+    if [ ${#failed_apps[@]} -gt 0 ]; then
+        error "Failed to install Flatpak applications: ${failed_apps[*]}"
+    fi
 
     info "${#apps[@]} Flatpak applications installed successfully"
 else
