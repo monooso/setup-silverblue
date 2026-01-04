@@ -181,7 +181,33 @@ else
 fi
 
 # -----------------------------------------------------------------------------
-# Step 6: Install Distrobox
+# Step 6: Install rclone
+# -----------------------------------------------------------------------------
+
+step_description="Install rclone"
+if step_confirm "$step_description"; then
+    if [ ! -f "$HOME/.local/bin/rclone" ]; then
+        info "Installing rclone..."
+        tmp_dir=$(mktemp -d)
+        curl -sL https://downloads.rclone.org/rclone-current-linux-amd64.zip -o "$tmp_dir/rclone.zip"
+        unzip -j "$tmp_dir/rclone.zip" "*/rclone" -d "$HOME/.local/bin"
+        chmod +x "$HOME/.local/bin/rclone"
+        rm -rf "$tmp_dir"
+
+        if [ ! -f "$HOME/.local/bin/rclone" ]; then
+            error "Failed to install rclone"
+        fi
+        info "rclone version: $("$HOME/.local/bin/rclone" version | head -1)"
+        info "rclone installed successfully"
+    else
+        info "rclone already installed, skipping"
+    fi
+else
+    error "Setup cancelled by user"
+fi
+
+# -----------------------------------------------------------------------------
+# Step 7: Install Distrobox
 # -----------------------------------------------------------------------------
 
 step_description="Install Distrobox"
@@ -204,7 +230,7 @@ else
 fi
 
 # -----------------------------------------------------------------------------
-# Step 7: Create Distrobox containers
+# Step 8: Create Distrobox containers
 # -----------------------------------------------------------------------------
 
 step_description="Create Distrobox containers (dev, build-neovim, build-mise-erlang)"
@@ -236,9 +262,8 @@ else
 fi
 
 # -----------------------------------------------------------------------------
-# Step 8: Install Flatpak applications
+# Step 9: Install Flatpak applications
 # -----------------------------------------------------------------------------
-
 
 step_description="Install Flatpak applications"
 if step_confirm "$step_description"; then
@@ -281,7 +306,7 @@ else
 fi
 
 # -----------------------------------------------------------------------------
-# Step 9: Change default shell to ZSH
+# Step 10: Change default shell to ZSH
 # -----------------------------------------------------------------------------
 
 if [ "$POST_REBOOT" = false ]; then
@@ -306,7 +331,7 @@ else
 fi
 
 # -----------------------------------------------------------------------------
-# Step 10: Completion message
+# Step 11: Completion message
 # -----------------------------------------------------------------------------
 
 if [ "$POST_REBOOT" = false ]; then
@@ -350,6 +375,7 @@ The following items were installed:
 - Dotfiles (cloned and symlinked)
 - Mise (version manager)
 - Starship prompt
+- rclone
 - Distrobox and containers (dev, build-neovim, build-mise-erlang)
 - Flatpak applications
 
