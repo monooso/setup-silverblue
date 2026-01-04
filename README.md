@@ -111,11 +111,6 @@ Your development environment is now ready.
 
 Configure your terminal emulator to automatically enter the `dev` container on new sessions.
 
-**Ghostty configuration**:
-```ini
-command = distrobox enter dev
-```
-
 ## Workflows
 
 ### Daily Development
