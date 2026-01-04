@@ -297,29 +297,16 @@ fi
 # Step 9: Create Distrobox containers
 # -----------------------------------------------------------------------------
 
-step_description="Create Distrobox containers (dev, build-neovim, build-mise-erlang)"
+step_description="Create Distrobox containers"
 if step_confirm "$step_description"; then
-    ini_file="$root_dir/distrobox.ini"
+    cd "$root_dir"
 
-    if [ ! -f "$ini_file" ]; then
+    if [ ! -f "distrobox.ini" ]; then
         error "distrobox.ini not found in: $root_dir"
     fi
 
-    existing_containers=$(distrobox list 2>/dev/null | grep -cE 'dev|build-neovim|build-mise-erlang' || echo "0")
-
-    if [ "$existing_containers" -lt 3 ]; then
-        info "Creating Distrobox containers from $ini_file..."
-        cd "$root_dir" || error "Failed to change to script directory"
-        distrobox-assemble create
-
-        if distrobox list | grep -qE 'dev|build-neovim|build-mise-erlang'; then
-            info "Containers created successfully"
-        else
-            error "Failed to create containers"
-        fi
-    else
-        info "All containers already exist, skipping"
-    fi
+    info "Creating Distrobox containers..."
+    distrobox-assemble create
 else
     error "Setup cancelled by user"
 fi
