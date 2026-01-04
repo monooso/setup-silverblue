@@ -85,7 +85,30 @@ if [ "$POST_REBOOT" = false ]; then
             info "Installing ZSH, Stow, and 1Password..."
             rpm-ostree install zsh stow https://downloads.1password.com/linux/rpm/stable/x86_64/1password-latest.rpm
             info "ZSH, Stow, and 1Password installed successfully"
-            info "NOTE: These packages will not be available until you reboot"
+
+            cat <<'EOF'
+
+========================================
+Layered packages installed!
+========================================
+
+IMPORTANT: You MUST reboot for these changes to take effect.
+
+After reboot, run this script again to continue setup.
+
+Would you like to reboot now? [y/N]
+EOF
+            read -r reboot_response
+            case "$reboot_response" in
+                [yY][eE][sS]|[yY])
+                    info "Rebooting system..."
+                    sudo reboot
+                    ;;
+                *)
+                    info "Setup paused. Please reboot when ready, then re-run this script."
+                    exit 0
+                    ;;
+            esac
         else
             info "ZSH, Stow, and 1Password already layered, skipping"
         fi
