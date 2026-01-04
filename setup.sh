@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+root_dir="$PWD"
+
 # -----------------------------------------------------------------------------
 # Helper functions
 # -----------------------------------------------------------------------------
@@ -297,18 +299,17 @@ fi
 
 step_description="Create Distrobox containers (dev, build-neovim, build-mise-erlang)"
 if step_confirm "$step_description"; then
-    script_dir="$(cd "$(dirname "$0")" && pwd)"
-    ini_file="$script_dir/distrobox.ini"
+    ini_file="$root_dir/distrobox.ini"
 
     if [ ! -f "$ini_file" ]; then
-        error "distrobox.ini not found in script directory: $script_dir"
+        error "distrobox.ini not found in: $root_dir"
     fi
 
     existing_containers=$(distrobox list 2>/dev/null | grep -cE 'dev|build-neovim|build-mise-erlang' || echo "0")
 
     if [ "$existing_containers" -lt 3 ]; then
         info "Creating Distrobox containers from $ini_file..."
-        cd "$script_dir" || error "Failed to change to script directory"
+        cd "$root_dir" || error "Failed to change to script directory"
         distrobox-assemble create
 
         if distrobox list | grep -qE 'dev|build-neovim|build-mise-erlang'; then
