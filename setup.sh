@@ -70,15 +70,15 @@ fi
 # -----------------------------------------------------------------------------
 
 if [ "$POST_REBOOT" = false ]; then
-    step_description="Layer ZSH and GNU Stow via rpm-ostree (requires reboot to take effect)"
+    step_description="Layer ZSH, GNU Stow, and 1Password via rpm-ostree (requires reboot to take effect)"
     if step_confirm "$step_description"; then
-        if ! rpm-ostree status | grep -qE '^(zsh|stow)'; then
-            info "Installing ZSH and Stow..."
-            rpm-ostree install zsh stow
-            info "ZSH and Stow installed successfully"
+        if ! rpm-ostree status | grep -qE '^(zsh|stow|1password)'; then
+            info "Installing ZSH, Stow, and 1Password..."
+            rpm-ostree install zsh stow https://downloads.1password.com/linux/rpm/stable/x86_64/1password-latest.rpm
+            info "ZSH, Stow, and 1Password installed successfully"
             info "NOTE: These packages will not be available until you reboot"
         else
-            info "ZSH and Stow already layered, skipping"
+            info "ZSH, Stow, and 1Password already layered, skipping"
         fi
     else
         error "Setup cancelled by user"
@@ -356,7 +356,7 @@ if [ "$POST_REBOOT" = false ]; then
         error "Setup cancelled by user"
     fi
 else
-    info "Skipping Step 9 (post-reboot phase)"
+    info "Skipping Step 11 (post-reboot phase)"
 fi
 
 # -----------------------------------------------------------------------------
@@ -371,11 +371,11 @@ Pre-reboot phase completed!
 ========================================
 
 The following items were configured:
-- ZSH and GNU Stow (layered via rpm-ostree)
+- ZSH, GNU Stow, and 1Password (layered via rpm-ostree)
 - Default shell changed to ZSH
 
 IMPORTANT: You MUST reboot for following changes to take effect:
-- rpm-ostree layered packages (ZSH, Stow)
+- rpm-ostree layered packages (ZSH, Stow, 1Password)
 - Default shell change
 
 After reboot, run this script again to continue setup.
@@ -406,6 +406,7 @@ The following items were installed:
 - Starship prompt
 - rclone
 - LazyGit
+- 1Password
 - Distrobox and containers (dev, build-neovim, build-mise-erlang)
 - Flatpak applications
 
