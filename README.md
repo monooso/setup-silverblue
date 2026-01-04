@@ -65,6 +65,21 @@ Dependencies: `autoconf`, `automake`, `g++`, `ncurses-devel`, `openssl-devel`
 
 **Note**: Erlang is singled out because it is particularly difficult to compile on Fedora and requires many dependencies. Other languages (Go, Node, etc.) are typically easier for Mise to handle directly.
 
+### User-space Tools
+
+Some tools are installed directly to `~/.local/bin` rather than via package managers. These are typically Go binaries or pre-compiled releases that don't require complex dependencies.
+
+Currently installed:
+- **rclone** - downloaded directly from rclone.org, extracted from versioned zip
+- **LazyGit** - downloaded from GitHub releases API, extracted from versioned tar.gz
+
+This approach avoids:
+- Layering packages on the host (keeps system changes minimal)
+- Unwanted dependencies that package managers bring along
+- COPR repository requirements or complex container setups
+
+The trade-off is manual update workflows - these tools must be updated by re-running setup or manually downloading new versions.
+
 ## Prerequisites
 
 ### Before Running Setup
@@ -87,11 +102,11 @@ The setup process is automated via `setup.sh` and runs in two phases:
 2. Run the setup script: `./setup.sh`
 
 The script will:
-- Layer ZSH and GNU Stow via `rpm-ostree`
+- Layer ZSH, GNU Stow, and 1Password via `rpm-ostree`
 - Change your default shell to ZSH
 - Prompt you to reboot
 
-**Reboot when prompted.** The layered packages (ZSH, Stow) and shell change require a reboot to take effect.
+**Reboot when prompted.** The layered packages (ZSH, Stow, 1Password) and shell change require a reboot to take effect.
 
 ### Phase 2: Post-reboot
 
@@ -100,7 +115,7 @@ After rebooting, re-run the setup script: `./setup.sh`
 The script will automatically detect it's in post-reboot phase and:
 - Clone your dotfiles repository
 - Install dotfiles using GNU Stow
-- Install user-space tools (Mise, Starship) to `~/.local/bin`
+- Install user-space tools (Mise, Starship, rclone, LazyGit) to `~/.local/bin`
 - Install Distrobox to `~/.local/bin`
 - Create all containers from `distrobox.ini`
 - Install Flatpak applications (Discord, Fastmail, Obsidian, etc.)
@@ -142,7 +157,7 @@ Configure your terminal emulator to automatically enter the `dev` container on n
 
 ### Why not use Distrobox export?
 
-Distrobox can export binaries and GUI applications from containers, allowing them to run on the host without manually entering the container. This works well for self-contained tools like LazyGit, but fails for tools that need to interact with Unix pipes (e.g. `ls | fzf`).
+Distrobox can export binaries and GUI applications from containers, allowing them to run on the host without manually entering the container. This works well for self-contained GUI applications, but fails for tools that need to interact with Unix pipes (e.g. `ls | fzf`).
 
 Living inside the `dev` container provides a more consistent experience and avoids these limitations.
 
@@ -152,7 +167,7 @@ Package managers handle security updates and dependency resolution automatically
 
 However, in some cases, `dnf install` brings unwanted dependencies. For example, `dnf install neovim` also installs Node.js, which could interfere with project-specific Node versions managed by Mise.
 
-This is a trade-off I'm still evaluating. The current approach favours avoiding unwanted dependencies, at the cost of manual update workflows.
+For tools like rclone and LazyGit, the current approach favours avoiding unwanted dependencies and keeping the system clean, at the cost of manual update workflows. These tools are simple Go binaries that work well as user-space installations.
 
 ### Why separate build containers?
 
