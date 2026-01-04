@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 set -euo pipefail
 
@@ -235,19 +235,30 @@ fi
 # Step 8: Install Flatpak applications
 # -----------------------------------------------------------------------------
 
+
 step_description="Install Flatpak applications"
 if step_confirm "$step_description"; then
-    apps="com.discordapp.Discord
-com.fastmail.Fastmail
-com.github.marhkb.Pods
-com.mattjakeman.ExtensionManager
-com.spotify.Client
-com.todoist.Todoist
-com.usebruno.Bruno
-dev.mufeed.Wordbook
-it.mijorus.gearlever
-md.obsidian.Obsidian
-org.gnome.Solanum"
+    apps=(
+        "com.brave.Browser"
+        "com.discordapp.Discord"
+        "com.fastmail.Fastmail"
+        "com.github.marhkb.Pods"
+        "com.github.tchx84.Flatseal"
+        "com.google.Chrome"
+        "com.mattjakeman.ExtensionManager"
+        "com.spotify.Client"
+        "com.todoist.Todoist"
+        "com.usebruno.Bruno"
+        "dev.mufeed.Wordbook"
+        "dev.zed.Zed"
+        "io.github.pieterdd.RcloneShuttle"
+        "it.mijorus.gearlever"
+        "md.obsidian.Obsidian"
+        "org.gnome.Solanum"
+        "org.gnome.gitlab.somas.Apostrophe"
+        "org.mozilla.firefox"
+        "page.tesk.Refine"
+    )
 
     if ! flatpak remote-list | grep -q flathub; then
         info "Adding Flathub remote..."
@@ -255,10 +266,12 @@ org.gnome.Solanum"
     fi
 
     info "Installing Flatpak applications..."
-    flatpak install $apps --noninteractive
 
-    installed_count=$(echo "$apps" | wc -w)
-    info "$installed_count Flatpak applications installed successfully"
+    for app in "${apps[@]}"; do
+        flatpak install "$app" --noninteractive
+    done
+
+    info "${#apps[@]} Flatpak applications installed successfully"
 else
     error "Setup cancelled by user"
 fi
