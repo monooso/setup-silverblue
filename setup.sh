@@ -348,7 +348,7 @@ if step_confirm "$step_description"; then
 
     failed_apps=()
     for app in "${apps[@]}"; do
-        if ! flatpak install "$app" --noninteractive --or-update; then
+        if ! flatpak install flathub "$app" --noninteractive --or-update; then
             failed_apps+=("$app")
         fi
     done
