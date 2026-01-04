@@ -127,6 +127,10 @@ if step_confirm "$step_description"; then
             error "Failed to install dotfiles (symlinks not created)"
         fi
         info "Dotfiles installed successfully"
+
+        info "Refreshing font cache..."
+        fc-cache --really-force
+        info "Font cache refreshed successfully"
     else
         info "Dotfiles already installed, skipping"
     fi
