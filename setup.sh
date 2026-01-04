@@ -150,22 +150,14 @@ fi
 
 step_description="Install dotfiles using GNU Stow"
 if step_confirm "$step_description"; then
-    if [ ! -L "$HOME/.zshrc" ]; then
-        info "Installing dotfiles..."
-        cd "$HOME/code/dotfiles" || error "Failed to change to dotfiles directory"
-        stow -t "$HOME" .
+    info "Installing dotfiles..."
+    cd "$HOME/code/dotfiles" || error "Failed to change to dotfiles directory"
+    stow -t "$HOME" .
+    info "Dotfiles installed successfully"
 
-        if [ ! -L "$HOME/.zshrc" ]; then
-            error "Failed to install dotfiles (symlinks not created)"
-        fi
-        info "Dotfiles installed successfully"
-
-        info "Refreshing font cache..."
-        fc-cache --really-force
-        info "Font cache refreshed successfully"
-    else
-        info "Dotfiles already installed, skipping"
-    fi
+    info "Refreshing font cache..."
+    fc-cache --really-force
+    info "Font cache refreshed successfully"
 else
     error "Setup cancelled by user"
 fi
