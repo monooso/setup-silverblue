@@ -84,13 +84,12 @@ The trade-off is manual update workflows - these tools must be updated by re-run
 
 ### Before Running Setup
 
-Copy your SSH keys to the host machine:
-```sh
-~/.ssh/keys.d/default
-~/.ssh/keys.d/default.pub
-```
-
 The setup script requires SSH keys for cloning your dotfiles repository.
+
+Before running setup:
+
+1. Copy your SSH keys to the host machine.
+2. Add your SSH keys to the SSH agent. For example, `ssh-add ~/.ssh/keys.d/default`
 
 ## Setup
 
